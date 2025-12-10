@@ -1,3 +1,4 @@
+import StatsPillars from '@/components/StatsPillars';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -65,6 +66,7 @@ export default function Home() {
           </svg>
         </div>
       </section>
+      <StatsPillars />
     </>
   );
 }

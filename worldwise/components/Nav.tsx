@@ -22,7 +22,7 @@ export default function Nav() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3">
           <Image
-            src="/assets/logo.png"
+            src="/assets/logo.jpg"
             alt="WorldWise Logo"
             width={60}
             height={60}
