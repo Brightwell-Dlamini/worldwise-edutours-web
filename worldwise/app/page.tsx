@@ -1,65 +1,70 @@
-import Image from "next/image";
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+    <>
+      {/* HERO SECTION */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Background Image – your Mlilwane giraffe flyer */}
         <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
+          src="/assets/tour3.jpg" // ← change to your exact giraffe flyer name if different
+          alt="Students exploring Mlilwane Wildlife Sanctuary"
+          fill
           priority
+          className="object-cover brightness-75"
+          sizes="100vw"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-navy/70 dark:bg-black/80" />
+
+        {/* Content */}
+        <div className="relative z-10 max-w-7xl mx-auto px-6 text-center text-white">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-montserrat font-bold leading-tight mb-6">
+            Transform Classrooms
+            <br className="hidden sm:block" />
+            into Global Adventures
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <p className="text-xl md:text-2xl font-inter mb-10 max-w-3xl mx-auto opacity-95">
+            Eswatini’s Premier Educational Tours — Curriculum-aligned, safe, and
+            unforgettable
           </p>
+
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <Link
+              href="/ministry-partnership"
+              className="px-10 py-5 bg-teal text-navy font-montserrat font-bold text-lg rounded-full hover:bg-greenYellow transition-all duration-300 shadow-xl"
+            >
+              Ministry Partnership
+            </Link>
+            <Link
+              href="/quote"
+              className="px-10 py-5 bg-transparent border-3 border-white text-white font-montserrat font-bold text-lg rounded-full hover:bg-white hover:text-navy transition-all duration-300"
+            >
+              Get a Quote
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* Scroll hint */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
+          <svg
+            className="w-8 h-8 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 14l-7 7m0 0l-7-7m7 7V3"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </svg>
         </div>
-      </main>
-    </div>
+      </section>
+    </>
   );
 }
