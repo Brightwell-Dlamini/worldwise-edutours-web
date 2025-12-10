@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import Nav from '@/components/Nav';
 
 export const metadata: Metadata = {
   title: 'WorldWise Educational Tours',
@@ -19,13 +20,11 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-inter antialiased">
-        {/* Temporary nav/footer so we can see structure */}
-        <header className="bg-navy text-white py-6 text-center text-2xl font-montserrat">
-          WorldWise Educational Tours
-        </header>
+      <body className="font-inter antialiased bg-white dark:bg-black text-navy dark:text-white">
+        <Nav />
         <main>{children}</main>
-        <footer className="bg-navy text-white py-8 text-center">
+        {/* Footer stays here – we’ll upgrade it next brick */}
+        <footer className="bg-navy text-white py-12 text-center">
           © 2025 WorldWise Educational Tours – Mbabane, Eswatini
         </footer>
       </body>
