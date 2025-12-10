@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Nav from '@/components/Nav';
+import Footer from '@/components/Footer';
+import WhatsAppFloat from '@/components/WhatsAppFloat';
 
 export const metadata: Metadata = {
   title: 'WorldWise Educational Tours',
@@ -23,10 +25,8 @@ export default function RootLayout({
       <body className="font-inter antialiased bg-white dark:bg-black text-navy dark:text-white">
         <Nav />
         <main>{children}</main>
-        {/* Footer stays here – we’ll upgrade it next brick */}
-        <footer className="bg-navy text-white py-12 text-center">
-          © 2025 WorldWise Educational Tours – Mbabane, Eswatini
-        </footer>
+        <Footer />
+        <WhatsAppFloat />
       </body>
     </html>
   );
