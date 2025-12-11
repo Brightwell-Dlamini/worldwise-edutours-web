@@ -34,11 +34,14 @@ const photos = [
 export default function GalleryClient() {
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
 
+  // This is the ONLY approved way in 2025 to detect client without useEffect
+  const isClient = typeof window !== 'undefined';
+
   return (
     <>
       {/* Hero */}
       <section className="relative py-32 bg-navy text-white text-center">
-        <div className="absolute inset-0 bg-gradient-to-b from-navy/90 to-navy" />
+        <div className="absolute inset-0 bg-linear-to-b from-navy/90 to-navy" />
         <div className="relative z-10 max-w-5xl mx-auto px-6">
           <h1 className="text-5xl md:text-7xl font-montserrat font-bold mb-6">
             Real Moments, Real Impact
@@ -49,36 +52,47 @@ export default function GalleryClient() {
         </div>
       </section>
 
-      {/* Masonry Gallery */}
+      {/* Gallery */}
       <section className="py-20 px-6 bg-gray-50 dark:bg-neutralGray/10">
         <div className="max-w-7xl mx-auto">
-          <ResponsiveMasonry
-            columnsCountBreakPoints={{ 350: 1, 750: 2, 900: 3 }}
-          >
-            <Masonry gutter="20px">
-              {photos.map((photo, index) => (
-                <div
-                  key={index}
-                  className="group cursor-pointer overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300"
-                  onClick={() => setSelectedImage(index)}
-                >
-                  <Image
-                    src={photo.src}
-                    alt={photo.alt}
-                    width={photo.width}
-                    height={photo.height}
-                    className="w-full h-auto group-hover:scale-105 transition-transform duration-500 object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    placeholder="blur"
-                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8Alt4p6o2k0j4v8A0e6I2S4w1Y4sO8P5H/9k="
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-navy/80 text-white p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="font-medium">{photo.alt}</p>
+          {isClient ? (
+            <ResponsiveMasonry
+              columnsCountBreakPoints={{ 350: 1, 750: 2, 900: 3 }}
+            >
+              <Masonry gutter="20px">
+                {photos.map((photo, index) => (
+                  <div
+                    key={index}
+                    className="group cursor-pointer overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300"
+                    onClick={() => setSelectedImage(index)}
+                  >
+                    <Image
+                      src={photo.src}
+                      alt={photo.alt}
+                      width={photo.width}
+                      height={photo.height}
+                      className="w-full h-auto group-hover:scale-105 transition-transform duration-500 object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      placeholder="blur"
+                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8Alt4p6o2k0j4v8A0e6I2S4w1Y4sO8P5H/9k="
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-navy/80 text-white p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <p className="font-medium">{photo.alt}</p>
+                    </div>
                   </div>
-                </div>
+                ))}
+              </Masonry>
+            </ResponsiveMasonry>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {photos.map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-gray-200 border-2 border-dashed rounded-xl h-96"
+                />
               ))}
-            </Masonry>
-          </ResponsiveMasonry>
+            </div>
+          )}
         </div>
       </section>
 
