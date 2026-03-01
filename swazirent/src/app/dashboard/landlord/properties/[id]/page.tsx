@@ -29,6 +29,9 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getPropertiesByLandlordId, setMockUserId } from '../../mockData';
+
+const USE_MOCK_DATA = true;
 
 export default function LandlordPropertyManagePage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -65,34 +68,58 @@ export default function LandlordPropertyManagePage() {
       try {
         setLoading(true);
 
-        const { data: propertyData, error: propertyError } = await supabase
-          .from('properties')
-          .select(
-            `
-            *,
-            photos:property_photos(*)
-          `,
-          )
-          .eq('id', params.id)
-          .eq('landlord_id', user.id)
-          .order('display_order', { foreignTable: 'photos', ascending: true })
-          .single();
+        if (USE_MOCK_DATA) {
+          // Set the mock user ID
+          setMockUserId(user.id);
 
-        if (propertyError) {
-          if (propertyError.code === 'PGRST116') {
+          // Use mock data
+          await new Promise((resolve) => setTimeout(resolve, 800)); // Simulate loading
+
+          // First check if this property belongs to the user
+          const userProperties = getPropertiesByLandlordId(user.id);
+          const mockProperty = userProperties.find((p) => p.id === params.id);
+
+          if (!mockProperty) {
             setError(
               'Property not found or you do not have permission to view it',
             );
           } else {
-            throw propertyError;
+            setProperty(mockProperty);
+
+            // Calculate price comparison
+            await fetchPriceComparison(mockProperty);
           }
-        }
+        } else {
+          // Use real Supabase data
+          const { data: propertyData, error: propertyError } = await supabase
+            .from('properties')
+            .select(
+              `
+              *,
+              photos:property_photos(*)
+            `,
+            )
+            .eq('id', params.id)
+            .eq('landlord_id', user.id)
+            .order('display_order', { foreignTable: 'photos', ascending: true })
+            .single();
 
-        if (propertyData) {
-          setProperty(propertyData as Property);
+          if (propertyError) {
+            if (propertyError.code === 'PGRST116') {
+              setError(
+                'Property not found or you do not have permission to view it',
+              );
+            } else {
+              throw propertyError;
+            }
+          }
 
-          // Calculate price comparison
-          await fetchPriceComparison(propertyData as Property);
+          if (propertyData) {
+            setProperty(propertyData as Property);
+
+            // Calculate price comparison
+            await fetchPriceComparison(propertyData as Property);
+          }
         }
       } catch (err) {
         const errorMessage =
@@ -111,46 +138,91 @@ export default function LandlordPropertyManagePage() {
 
   const fetchPriceComparison = async (currentProperty: Property) => {
     try {
-      const { data, error } = await supabase
-        .from('properties')
-        .select('price')
-        .eq('location_city', currentProperty.location_city)
-        .eq('property_type', currentProperty.property_type)
-        .eq('bedrooms', currentProperty.bedrooms)
-        .eq('status', 'active')
-        .not('id', 'eq', currentProperty.id);
+      if (USE_MOCK_DATA) {
+        // Mock price comparison using mock data
+        const similarProps = getPropertiesByLandlordId(
+          currentProperty.landlord_id,
+        ).filter(
+          (p) =>
+            p.location_city === currentProperty.location_city &&
+            p.property_type === currentProperty.property_type &&
+            p.bedrooms === currentProperty.bedrooms &&
+            p.status === 'active' &&
+            p.id !== currentProperty.id,
+        );
 
-      if (error) throw error;
+        if (similarProps.length === 0) {
+          setPriceComparison(null);
+          return;
+        }
 
-      if (!data || data.length === 0) {
-        setPriceComparison(null);
-        return;
+        const prices = similarProps.map((p) => p.price);
+        const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+
+        let position: 'below' | 'above' | 'average' = 'average';
+        let diff = 0;
+
+        if (currentProperty.price < avg * 0.9) {
+          position = 'below';
+          diff = Math.round(((avg - currentProperty.price) / avg) * 100);
+        } else if (currentProperty.price > avg * 1.1) {
+          position = 'above';
+          diff = Math.round(((currentProperty.price - avg) / avg) * 100);
+        }
+
+        setPriceComparison({
+          average: avg,
+          min,
+          max,
+          count: similarProps.length,
+          position,
+          diff,
+        });
+      } else {
+        // Real Supabase price comparison
+        const { data, error } = await supabase
+          .from('properties')
+          .select('price')
+          .eq('location_city', currentProperty.location_city)
+          .eq('property_type', currentProperty.property_type)
+          .eq('bedrooms', currentProperty.bedrooms)
+          .eq('status', 'active')
+          .not('id', 'eq', currentProperty.id);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          setPriceComparison(null);
+          return;
+        }
+
+        const prices = data.map((p) => p.price);
+        const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+
+        let position: 'below' | 'above' | 'average' = 'average';
+        let diff = 0;
+
+        if (currentProperty.price < avg * 0.9) {
+          position = 'below';
+          diff = Math.round(((avg - currentProperty.price) / avg) * 100);
+        } else if (currentProperty.price > avg * 1.1) {
+          position = 'above';
+          diff = Math.round(((currentProperty.price - avg) / avg) * 100);
+        }
+
+        setPriceComparison({
+          average: avg,
+          min,
+          max,
+          count: data.length,
+          position,
+          diff,
+        });
       }
-
-      const prices = data.map((p) => p.price);
-      const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-      const min = Math.min(...prices);
-      const max = Math.max(...prices);
-
-      let position: 'below' | 'above' | 'average' = 'average';
-      let diff = 0;
-
-      if (currentProperty.price < avg * 0.9) {
-        position = 'below';
-        diff = Math.round(((avg - currentProperty.price) / avg) * 100);
-      } else if (currentProperty.price > avg * 1.1) {
-        position = 'above';
-        diff = Math.round(((currentProperty.price - avg) / avg) * 100);
-      }
-
-      setPriceComparison({
-        average: avg,
-        min,
-        max,
-        count: data.length,
-        position,
-        diff,
-      });
     } catch (error) {
       console.error('Error fetching price comparison:', error);
     }
@@ -160,15 +232,22 @@ export default function LandlordPropertyManagePage() {
     if (!property) return;
 
     try {
-      const { error } = await supabase
-        .from('properties')
-        .update({ status: newStatus })
-        .eq('id', property.id);
+      if (USE_MOCK_DATA) {
+        // Simulate status change
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setProperty({ ...property, status: newStatus });
+        toast.success(`Property marked as ${newStatus}`);
+      } else {
+        const { error } = await supabase
+          .from('properties')
+          .update({ status: newStatus })
+          .eq('id', property.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setProperty({ ...property, status: newStatus });
-      toast.success(`Property marked as ${newStatus}`);
+        setProperty({ ...property, status: newStatus });
+        toast.success(`Property marked as ${newStatus}`);
+      }
     } catch (err) {
       console.error('Error updating status:', err);
       toast.error('Failed to update property status');
@@ -180,15 +259,22 @@ export default function LandlordPropertyManagePage() {
 
     setDeleting(true);
     try {
-      const { error } = await supabase
-        .from('properties')
-        .delete()
-        .eq('id', property.id);
+      if (USE_MOCK_DATA) {
+        // Simulate delete
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        toast.success('Property deleted successfully');
+        router.push('/dashboard/landlord');
+      } else {
+        const { error } = await supabase
+          .from('properties')
+          .delete()
+          .eq('id', property.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast.success('Property deleted successfully');
-      router.push('/dashboard/landlord');
+        toast.success('Property deleted successfully');
+        router.push('/dashboard/landlord');
+      }
     } catch (err) {
       console.error('Error deleting property:', err);
       toast.error('Failed to delete property');
@@ -258,6 +344,11 @@ export default function LandlordPropertyManagePage() {
               >
                 {property.status}
               </Badge>
+              {USE_MOCK_DATA && (
+                <Badge variant="outline" className="bg-yellow-50">
+                  Mock Data
+                </Badge>
+              )}
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" asChild>

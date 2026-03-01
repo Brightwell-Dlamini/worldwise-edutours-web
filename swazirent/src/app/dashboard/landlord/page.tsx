@@ -47,6 +47,14 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  getLandlordStats,
+  getPropertiesByLandlordId,
+  setMockUserId,
+} from './mockData';
+
+// Flag to toggle between mock and real data
+const USE_MOCK_DATA = true;
 
 export default function LandlordDashboard() {
   const { user, isLoading } = useAuth();
@@ -73,39 +81,53 @@ export default function LandlordDashboard() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('properties')
-        .select(
-          `
-          *,
-          photos:property_photos (
-            id,
-            property_id,
-            photo_url,
-            caption,
-            display_order,
-            created_at
+      if (USE_MOCK_DATA) {
+        // Set the mock user ID to the real user's ID
+        setMockUserId(user.id);
+
+        // Use mock data
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate loading
+        const mockProps = getPropertiesByLandlordId(user.id);
+        console.log('Mock properties for user:', user.id, mockProps); // Debug log
+        setProperties(mockProps);
+        setStats(getLandlordStats(user.id));
+      } else {
+        // Use real Supabase data
+        const { data, error } = await supabase
+          .from('properties')
+          .select(
+            `
+            *,
+            photos:property_photos (
+              id,
+              property_id,
+              photo_url,
+              caption,
+              display_order,
+              created_at
+            )
+          `,
           )
-        `,
-        )
-        .eq('landlord_id', user.id)
-        .order('created_at', { ascending: false });
+          .eq('landlord_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProperties(data || []);
+        if (error) throw error;
+        setProperties(data || []);
 
-      // Calculate stats
-      const total = data?.length || 0;
-      const active = data?.filter((p) => p.status === 'active').length || 0;
-      const rented = data?.filter((p) => p.status === 'rented').length || 0;
-      const totalViews = data?.reduce((sum, p) => sum + (p.views || 0), 0) || 0;
+        // Calculate stats
+        const total = data?.length || 0;
+        const active = data?.filter((p) => p.status === 'active').length || 0;
+        const rented = data?.filter((p) => p.status === 'rented').length || 0;
+        const totalViews =
+          data?.reduce((sum, p) => sum + (p.views || 0), 0) || 0;
 
-      setStats({
-        total,
-        active,
-        rented,
-        totalViews,
-      });
+        setStats({
+          total,
+          active,
+          rented,
+          totalViews,
+        });
+      }
     } catch (error) {
       console.error('Error fetching properties:', error);
       toast.error('Failed to load properties');
@@ -131,17 +153,27 @@ export default function LandlordDashboard() {
 
     setDeleting(true);
     try {
-      const { error } = await supabase
-        .from('properties')
-        .delete()
-        .eq('id', propertyToDelete);
+      if (USE_MOCK_DATA) {
+        // Simulate delete with mock data
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        setProperties(properties.filter((p) => p.id !== propertyToDelete));
+        toast.success('Property deleted successfully');
+        setDeleteDialogOpen(false);
+        setPropertyToDelete(null);
+      } else {
+        // Real delete with Supabase
+        const { error } = await supabase
+          .from('properties')
+          .delete()
+          .eq('id', propertyToDelete);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setProperties(properties.filter((p) => p.id !== propertyToDelete));
-      toast.success('Property deleted successfully');
-      setDeleteDialogOpen(false);
-      setPropertyToDelete(null);
+        setProperties(properties.filter((p) => p.id !== propertyToDelete));
+        toast.success('Property deleted successfully');
+        setDeleteDialogOpen(false);
+        setPropertyToDelete(null);
+      }
     } catch (error) {
       console.error('Error deleting property:', error);
       toast.error('Failed to delete property');
@@ -155,20 +187,32 @@ export default function LandlordDashboard() {
     newStatus: 'active' | 'rented',
   ) {
     try {
-      const { error } = await supabase
-        .from('properties')
-        .update({ status: newStatus })
-        .eq('id', propertyId);
+      if (USE_MOCK_DATA) {
+        // Simulate status change with mock data
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setProperties(
+          properties.map((p) =>
+            p.id === propertyId ? { ...p, status: newStatus } : p,
+          ),
+        );
+        toast.success(`Property marked as ${newStatus}`);
+      } else {
+        // Real update with Supabase
+        const { error } = await supabase
+          .from('properties')
+          .update({ status: newStatus })
+          .eq('id', propertyId);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setProperties(
-        properties.map((p) =>
-          p.id === propertyId ? { ...p, status: newStatus } : p,
-        ),
-      );
+        setProperties(
+          properties.map((p) =>
+            p.id === propertyId ? { ...p, status: newStatus } : p,
+          ),
+        );
 
-      toast.success(`Property marked as ${newStatus}`);
+        toast.success(`Property marked as ${newStatus}`);
+      }
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Failed to update status');
@@ -194,6 +238,12 @@ export default function LandlordDashboard() {
           <p className="text-gray-600">
             Manage your properties and track performance
           </p>
+          {USE_MOCK_DATA && (
+            <Badge variant="outline" className="mt-2 bg-yellow-50">
+              Using Mock Data (Development Mode) - User ID:{' '}
+              {user?.id?.substring(0, 8)}...
+            </Badge>
+          )}
         </div>
         <Button asChild>
           <Link href="/dashboard/landlord/add-property">

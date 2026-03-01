@@ -35,6 +35,7 @@ export const MOCK_PROPERTIES: Property[] = [
         status: 'active',
         is_featured: true,
         views: 145,
+        contact_phone: '+268 7600 1234',
         created_at: '2024-03-15T10:30:00Z',
         updated_at: '2024-03-15T10:30:00Z'
     },
@@ -57,6 +58,7 @@ export const MOCK_PROPERTIES: Property[] = [
         status: 'active',
         is_featured: true,
         views: 89,
+        contact_phone: '+268 7611 9876',
         created_at: '2024-03-14T14:20:00Z',
         updated_at: '2024-03-14T14:20:00Z'
     },
@@ -79,6 +81,7 @@ export const MOCK_PROPERTIES: Property[] = [
         status: 'active',
         is_featured: false,
         views: 56,
+        contact_phone: '+268 7622 4567',
         created_at: '2024-03-13T09:15:00Z',
         updated_at: '2024-03-13T09:15:00Z'
     },
@@ -101,6 +104,7 @@ export const MOCK_PROPERTIES: Property[] = [
         status: 'active',
         is_featured: true,
         views: 234,
+        contact_phone: '+268 7600 1234',
         created_at: '2024-03-12T16:45:00Z',
         updated_at: '2024-03-12T16:45:00Z'
     },
@@ -123,6 +127,7 @@ export const MOCK_PROPERTIES: Property[] = [
         status: 'active',
         is_featured: false,
         views: 67,
+        contact_phone: '+268 7611 9876',
         created_at: '2024-03-11T11:30:00Z',
         updated_at: '2024-03-11T11:30:00Z'
     },
@@ -145,6 +150,7 @@ export const MOCK_PROPERTIES: Property[] = [
         status: 'active',
         is_featured: true,
         views: 178,
+        contact_phone: '+268 7622 4567',
         created_at: '2024-03-10T13:20:00Z',
         updated_at: '2024-03-10T13:20:00Z'
     },
@@ -167,6 +173,7 @@ export const MOCK_PROPERTIES: Property[] = [
         status: 'active',
         is_featured: true,
         views: 92,
+        contact_phone: '+268 7600 1234',
         created_at: '2024-03-09T10:00:00Z',
         updated_at: '2024-03-09T10:00:00Z'
     },
@@ -189,6 +196,7 @@ export const MOCK_PROPERTIES: Property[] = [
         status: 'active',
         is_featured: false,
         views: 45,
+        contact_phone: '+268 7611 9876',
         created_at: '2024-03-08T15:45:00Z',
         updated_at: '2024-03-08T15:45:00Z'
     },
@@ -211,6 +219,7 @@ export const MOCK_PROPERTIES: Property[] = [
         status: 'active',
         is_featured: false,
         views: 78,
+        contact_phone: '+268 7622 4567',
         created_at: '2024-03-07T11:20:00Z',
         updated_at: '2024-03-07T11:20:00Z'
     },
@@ -233,6 +242,7 @@ export const MOCK_PROPERTIES: Property[] = [
         status: 'active',
         is_featured: false,
         views: 34,
+        contact_phone: '+268 7600 1234',
         created_at: '2024-03-06T09:30:00Z',
         updated_at: '2024-03-06T09:30:00Z'
     }

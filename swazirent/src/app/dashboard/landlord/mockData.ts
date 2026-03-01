@@ -2,10 +2,13 @@
 
 import { Property } from '@/types/property';
 
-export const mockProperties: Property[] = [
+// Store the current user ID to use in mock data
+let currentUserId: string | null = null;
+
+// Base mock properties template (without landlord_id)
+const baseProperties: Omit<Property, 'landlord_id'>[] = [
     {
         id: 'prop-001',
-        landlord_id: 'user-123',
         title: 'Spacious 3-Bedroom Family Home in Ngwane Park',
         description: 'Beautiful family home with large garden, perfect for families. Features include modern kitchen, spacious living areas, and secure parking. Close to schools and shopping centers.',
         property_type: 'house',
@@ -61,7 +64,6 @@ export const mockProperties: Property[] = [
     },
     {
         id: 'prop-002',
-        landlord_id: 'user-123',
         title: 'Modern 2-Bedroom Apartment in CBD',
         description: 'Contemporary apartment in the heart of the city. Walking distance to shops, restaurants, and business districts. Secure building with 24hr security.',
         property_type: 'apartment',
@@ -117,7 +119,6 @@ export const mockProperties: Property[] = [
     },
     {
         id: 'prop-003',
-        landlord_id: 'user-123',
         title: 'Cozy Townhouse with Garden - Matsapha',
         description: 'Perfect for professionals or small families. Low-maintenance townhouse with small garden, secure complex, and easy access to industrial area.',
         property_type: 'townhouse',
@@ -165,7 +166,6 @@ export const mockProperties: Property[] = [
     },
     {
         id: 'prop-004',
-        landlord_id: 'user-123',
         title: 'Budget-Friendly Backrooms - Nhlangano',
         description: 'Simple but comfortable backrooms with private entrance. Ideal for single person or student. Shared yard with main house.',
         property_type: 'backrooms',
@@ -213,7 +213,6 @@ export const mockProperties: Property[] = [
     },
     {
         id: 'prop-005',
-        landlord_id: 'user-123',
         title: 'Luxury 4-Bedroom with Pool - Ezulwini',
         description: 'Stunning luxury home in the valley. Features include swimming pool, staff quarters, and beautiful mountain views. Perfect for executive family.',
         property_type: 'house',
@@ -274,65 +273,35 @@ export const mockProperties: Property[] = [
                 created_at: '2025-03-01T13:30:00Z'
             }
         ]
-    },
-    {
-        id: 'prop-006',
-        landlord_id: 'user-456',
-        title: 'Student Accommodation - UNISWA Area',
-        description: 'Popular student accommodation close to UNISWA. Shared common areas with private bedrooms. Ideal for students.',
-        property_type: 'other',
-        price: 1800,
-        location_city: 'Manzini',
-        location_suburb: 'Kwaluseni',
-        location_address: '89 Campus Road',
-        latitude: -26.4833,
-        longitude: 31.3333,
-        bedrooms: 1,
-        bathrooms: 1,
-        is_furnished: true,
-        amenities: ['Parking', 'Security', 'Backup Water'],
-        lease_terms: '11-month lease, student-friendly',
-        status: 'active',
-        is_featured: false,
-        views: 156,
-        created_at: '2025-02-18T11:15:00Z',
-        updated_at: '2025-02-18T11:15:00Z',
-        contact_phone: '+268 7600 5678',
-        contact_whatsapp: '+268 7600 5678',
-        landlord: {
-            full_name: 'Mary Ndlovu',
-            phone: '+268 7600 5678',
-            is_verified: true
-        },
-        photos: [
-            {
-                id: 'photo-006-1',
-                property_id: 'prop-006',
-                photo_url: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800',
-                caption: 'Building exterior',
-                display_order: 0,
-                created_at: '2025-02-18T11:15:00Z'
-            },
-            {
-                id: 'photo-006-2',
-                property_id: 'prop-006',
-                photo_url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800',
-                caption: 'Common area',
-                display_order: 1,
-                created_at: '2025-02-18T11:15:00Z'
-            }
-        ]
     }
 ];
 
-// Helper function to get properties by landlord ID
+// Function to set the current user ID
+export const setMockUserId = (userId: string) => {
+    currentUserId = userId;
+};
+
+// Function to get properties with the current user's ID
+export const getMockProperties = (): Property[] => {
+    if (!currentUserId) {
+        console.warn('Mock user ID not set. Call setMockUserId first.');
+        return [];
+    }
+
+    return baseProperties.map(prop => ({
+        ...prop,
+        landlord_id: currentUserId
+    })) as Property[];
+};
+
+// Helper function to get properties by landlord ID (now just filters the mock data)
 export const getPropertiesByLandlordId = (landlordId: string): Property[] => {
-    return mockProperties.filter(prop => prop.landlord_id === landlordId);
+    return getMockProperties().filter(prop => prop.landlord_id === landlordId);
 };
 
 // Helper function to get a property by ID
 export const getPropertyById = (propertyId: string): Property | undefined => {
-    return mockProperties.find(prop => prop.id === propertyId);
+    return getMockProperties().find(prop => prop.id === propertyId);
 };
 
 // Helper function to get stats for a landlord
