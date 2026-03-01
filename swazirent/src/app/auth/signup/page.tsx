@@ -1,17 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Add useEffect
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
-// After creating the profile, send welcome email
-import { WelcomeEmail } from '@/emails/WelcomeEmail';
-import { render } from '@react-email/components';
-import { sendEmail } from '@/lib/email';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Card,
   CardContent,
@@ -21,28 +17,247 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, User, Building } from 'lucide-react';
+import { Loader2, User, Building, CheckCircle } from 'lucide-react';
+import { z } from 'zod';
+
+// Import email functionality from your existing file
+import { sendEmail } from '@/lib/email';
+import { WelcomeEmail } from '@/emails/WelcomeEmail';
+import { render } from '@react-email/components';
+
+// Validation schema
+const signUpSchema = z
+  .object({
+    email: z.string().email('Please enter a valid email address'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string().min(6, 'Please confirm your password'),
+    fullName: z.string().min(2, 'Full name is required'),
+    phone: z
+      .string()
+      .min(10, 'Phone number must be at least 10 digits')
+      .regex(
+        /^(\+268)?[0-9\s\-]+$/,
+        'Please enter a valid Eswatini phone number',
+      ),
+    userType: z.enum(['renter', 'landlord']),
+    agreeToTerms: z.boolean().refine((val) => val === true, {
+      message: 'You must agree to the terms and conditions',
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
+
+// Helper function to format Eswatini phone numbers
+const formatEswatiniPhone = (value: string): string => {
+  // Remove all non-numeric characters
+  const cleaned = value.replace(/\D/g, '');
+
+  // Handle different formats
+  if (cleaned.startsWith('268')) {
+    // Already has country code
+    if (cleaned.length === 12) {
+      // 268 + 8 digits
+      return `+${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+    }
+    return `+${cleaned}`;
+  } else if (cleaned.startsWith('0')) {
+    // Local format starting with 0
+    if (cleaned.length === 9) {
+      // 0 + 8 digits
+      return `+268 ${cleaned.slice(1, 4)} ${cleaned.slice(4)}`;
+    }
+    return cleaned;
+  } else if (cleaned.length === 8) {
+    // Just the 8 digits
+    return `+268 ${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
+  }
+
+  return value;
+};
+
+// Error message mapper with proper typing
+const getErrorMessage = (error: unknown): string => {
+  if (!error) return 'An error occurred during signup';
+
+  // Handle Supabase error
+  if (typeof error === 'object' && error !== null) {
+    // Check if it's a Supabase error with message property
+    if ('message' in error && typeof error.message === 'string') {
+      const message = error.message;
+
+      // Supabase specific errors
+      if (message.includes('User already registered')) {
+        return 'This email is already registered. Please log in instead.';
+      }
+      if (message.includes('Password should be at least 6 characters')) {
+        return 'Password must be at least 6 characters long.';
+      }
+      if (message.includes('rate limit')) {
+        return 'Too many signup attempts. Please try again later.';
+      }
+      if (message.includes('Email not confirmed')) {
+        return 'Please check your email to confirm your account.';
+      }
+
+      return message;
+    }
+
+    // Handle other error objects
+    if ('toString' in error) {
+      return error.toString();
+    }
+  }
+
+  // Default message
+  return 'An error occurred during signup. Please try again.';
+};
+
+// Type for form data
+type FormDataType = {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  fullName: string;
+  phone: string;
+  userType: 'renter' | 'landlord';
+  agreeToTerms: boolean;
+};
+
+// Type for email sending result
+interface EmailResult {
+  success: boolean;
+  skipped?: boolean;
+  error?: unknown;
+  data?: unknown;
+}
 
 export default function SignUp() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
+  const [successState, setSuccessState] = useState<{
+    type: 'success' | 'verification';
+    message: string;
+  } | null>(null);
+  const [isMounted, setIsMounted] = useState(false); // Add mounted state
+
+  const [formData, setFormData] = useState<FormDataType>({
     email: '',
     password: '',
+    confirmPassword: '',
     fullName: '',
     phone: '',
-    userType: 'renter' as 'renter' | 'landlord',
+    userType: 'renter',
+    agreeToTerms: false,
   });
+
+  // Handle client-side only rendering
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatEswatiniPhone(e.target.value);
+    setFormData({ ...formData, phone: formatted });
+  };
+
+  const validateForm = (): boolean => {
+    try {
+      signUpSchema.parse(formData);
+      setValidationErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errors: Record<string, string> = {};
+        error.issues.forEach((issue: z.ZodIssue) => {
+          if (issue.path[0]) {
+            errors[issue.path[0].toString()] = issue.message;
+          }
+        });
+        setValidationErrors(errors);
+      }
+      return false;
+    }
+  };
+
+  const sendWelcomeEmail = async (userData: {
+    email: string;
+    fullName: string;
+    userType: 'renter' | 'landlord';
+  }): Promise<EmailResult> => {
+    try {
+      const emailHtml = await render(
+        WelcomeEmail({
+          name: userData.fullName,
+          userType: userData.userType,
+        }),
+      );
+
+      const result = await sendEmail({
+        to: userData.email,
+        subject: 'Welcome to SwaziRent!',
+        html: emailHtml,
+      });
+
+      if (result.success) {
+        console.log('Welcome email sent successfully');
+      } else if (result.skipped) {
+        console.log('Welcome email skipped: Resend not configured');
+      } else {
+        console.error('Failed to send welcome email:', result.error);
+
+        // Log to Supabase for tracking (optional)
+        try {
+          await supabase
+            .from('email_logs')
+            .insert({
+              email: userData.email,
+              type: 'welcome',
+              status: 'failed',
+              error:
+                result.error &&
+                typeof result.error === 'object' &&
+                'message' in result.error
+                  ? String(result.error.message)
+                  : 'Unknown error',
+              user_data: userData,
+              created_at: new Date().toISOString(),
+            })
+            .maybeSingle();
+        } catch (logError) {
+          // Ignore logging errors
+          console.error('Failed to log email error:', logError);
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error rendering or sending welcome email:', error);
+      return { success: false, error };
+    }
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccessState(null);
+    setValidationErrors({});
+
+    // Validate form
+    if (!validateForm()) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       // Sign up with Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -51,47 +266,120 @@ export default function SignUp() {
             phone: formData.phone,
             user_type: formData.userType,
           },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
-      if (error) throw error;
+      if (signUpError) throw signUpError;
 
       if (data.user) {
-        // Try to send welcome email, but don't block if it fails
-        try {
-          const emailHtml = await render(
-            WelcomeEmail({
-              name: formData.fullName,
-              userType: formData.userType,
-            }),
-          );
-          await sendEmail({
-            to: formData.email,
-            subject: 'Welcome to SwaziRent!',
-            html: emailHtml,
-          });
-        } catch (emailError) {
-          // Log email error but don't stop the signup process
-          console.error('Failed to send welcome email:', emailError);
-        }
+        // Send welcome email (non-blocking) - don't await
+        sendWelcomeEmail({
+          email: formData.email,
+          fullName: formData.fullName,
+          userType: formData.userType,
+        });
 
-        // Redirect based on user type
-        if (formData.userType === 'landlord') {
-          router.push('/dashboard/landlord/pending-verification');
+        // Check if email confirmation is required
+        if (!data.session) {
+          setSuccessState({
+            type: 'verification',
+            message:
+              'Please check your email to confirm your account before logging in.',
+          });
+
+          // Clear form
+          setFormData({
+            email: '',
+            password: '',
+            confirmPassword: '',
+            fullName: '',
+            phone: '',
+            userType: 'renter',
+            agreeToTerms: false,
+          });
         } else {
-          router.push('/dashboard/renter');
+          setSuccessState({
+            type: 'success',
+            message: 'Account created successfully! Redirecting...',
+          });
+
+          // Redirect based on user type
+          setTimeout(() => {
+            if (formData.userType === 'landlord') {
+              router.push('/dashboard/landlord/pending-verification');
+            } else {
+              router.push('/dashboard/renter');
+            }
+          }, 2000);
         }
       }
     } catch (error: unknown) {
       console.error('Signup error:', error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'An error occurred during signup';
-      setError(errorMessage);
+      setError(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
+  }
+
+  // Show loading or nothing during SSR to prevent hydration mismatch
+  if (!isMounted) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-md mx-auto">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                <p className="text-gray-600">Loading...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // If in success state, show success message
+  if (successState) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-md mx-auto">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="flex justify-center">
+                  {successState.type === 'verification' ? (
+                    <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 text-blue-600" />
+                    </div>
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold">
+                  {successState.type === 'verification'
+                    ? 'Verify Your Email'
+                    : 'Success!'}
+                </h3>
+                <p className="text-gray-600">{successState.message}</p>
+                {successState.type === 'verification' && (
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => router.push('/auth/login')}
+                  >
+                    Go to Login
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -162,8 +450,14 @@ export default function SignUp() {
                   onChange={(e) =>
                     setFormData({ ...formData, fullName: e.target.value })
                   }
+                  className={validationErrors.fullName ? 'border-red-500' : ''}
                   required
                 />
+                {validationErrors.fullName && (
+                  <p className="text-sm text-red-500">
+                    {validationErrors.fullName}
+                  </p>
+                )}
               </div>
 
               {/* Email */}
@@ -177,8 +471,14 @@ export default function SignUp() {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
+                  className={validationErrors.email ? 'border-red-500' : ''}
                   required
                 />
+                {validationErrors.email && (
+                  <p className="text-sm text-red-500">
+                    {validationErrors.email}
+                  </p>
+                )}
               </div>
 
               {/* Phone */}
@@ -189,11 +489,18 @@ export default function SignUp() {
                   type="tel"
                   placeholder="+268 76XX XXXX"
                   value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
+                  onChange={handlePhoneChange}
+                  className={validationErrors.phone ? 'border-red-500' : ''}
                   required
                 />
+                {validationErrors.phone && (
+                  <p className="text-sm text-red-500">
+                    {validationErrors.phone}
+                  </p>
+                )}
+                <p className="text-xs text-gray-500">
+                  Format: +268 76XX XXXX or 76XX XXXX
+                </p>
               </div>
 
               {/* Password */}
@@ -207,12 +514,76 @@ export default function SignUp() {
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
+                  className={validationErrors.password ? 'border-red-500' : ''}
                   required
                 />
+                {validationErrors.password && (
+                  <p className="text-sm text-red-500">
+                    {validationErrors.password}
+                  </p>
+                )}
                 <p className="text-xs text-gray-500">
                   Must be at least 6 characters
                 </p>
               </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                  className={
+                    validationErrors.confirmPassword ? 'border-red-500' : ''
+                  }
+                  required
+                />
+                {validationErrors.confirmPassword && (
+                  <p className="text-sm text-red-500">
+                    {validationErrors.confirmPassword}
+                  </p>
+                )}
+              </div>
+
+              {/* Terms and Conditions */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="terms"
+                  checked={formData.agreeToTerms}
+                  onCheckedChange={(checked) =>
+                    setFormData({
+                      ...formData,
+                      agreeToTerms: checked as boolean,
+                    })
+                  }
+                />
+                <Label htmlFor="terms" className="text-sm">
+                  I agree to the{' '}
+                  <Link href="/terms" className="text-primary hover:underline">
+                    Terms and Conditions
+                  </Link>{' '}
+                  and{' '}
+                  <Link
+                    href="/privacy"
+                    className="text-primary hover:underline"
+                  >
+                    Privacy Policy
+                  </Link>
+                </Label>
+              </div>
+              {validationErrors.agreeToTerms && (
+                <p className="text-sm text-red-500">
+                  {validationErrors.agreeToTerms}
+                </p>
+              )}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (

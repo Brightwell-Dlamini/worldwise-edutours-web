@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { PropertyType } from '@/types/property';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,7 +28,10 @@ import {
   Loader2,
   Upload,
   X,
-  Clock,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Badge,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -39,13 +43,15 @@ const CITIES = [
   'Siteki',
   'Big Bend',
 ];
-const PROPERTY_TYPES = [
+
+const PROPERTY_TYPES: PropertyType[] = [
   'house',
   'apartment',
   'townhouse',
   'backrooms',
   'other',
 ];
+
 const AMENITIES = [
   'Parking',
   'Backup Water',
@@ -61,23 +67,31 @@ const AMENITIES = [
   'Solar Power',
 ];
 
+interface PriceInsight {
+  average: number;
+  min: number;
+  max: number;
+  count: number;
+  suggestion: 'low' | 'good' | 'high' | null;
+  message: string;
+}
+
 export default function AddPropertyPage() {
-  const { user, userType } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
-  const [verificationStatus, setVerificationStatus] = useState<
-    'verified' | 'pending' | null
-  >(null);
-  const [checkingVerification, setCheckingVerification] = useState(true);
+  const [priceInsight, setPriceInsight] = useState<PriceInsight | null>(null);
+  const [checkingPrice, setCheckingPrice] = useState(false);
+
   const [formData, setFormData] = useState({
     // Step 1: Basic Info
     title: '',
     description: '',
-    property_type: '',
+    property_type: '' as PropertyType | '',
     price: '',
 
     // Step 2: Location
@@ -99,45 +113,90 @@ export default function AddPropertyPage() {
 
   const totalSteps = 4;
 
-  // Check verification status on page load
+  // Price comparison effect
   useEffect(() => {
-    async function checkVerification() {
-      if (!user || userType !== 'landlord') {
-        router.push('/dashboard/landlord');
+    async function checkPrice() {
+      const price = parseFloat(formData.price);
+      if (
+        !formData.price ||
+        isNaN(price) ||
+        !formData.city ||
+        !formData.property_type ||
+        !formData.bedrooms
+      ) {
+        setPriceInsight(null);
         return;
       }
 
+      setCheckingPrice(true);
       try {
+        // Get comparable properties
         const { data, error } = await supabase
-          .from('profiles')
-          .select('is_verified')
-          .eq('id', user.id)
-          .single();
+          .from('properties')
+          .select('price')
+          .eq('location_city', formData.city)
+          .eq('property_type', formData.property_type)
+          .eq('bedrooms', parseInt(formData.bedrooms))
+          .eq('status', 'active')
+          .not('price', 'is', null);
 
         if (error) throw error;
 
-        const isVerified = data?.is_verified || false;
-        setVerificationStatus(isVerified ? 'verified' : 'pending');
-
-        // If not verified, redirect after showing message
-        if (!isVerified) {
-          toast.error('Verification Required', {
-            description:
-              'Your landlord account must be verified before you can list properties.',
-            duration: 5000,
+        if (!data || data.length === 0) {
+          setPriceInsight({
+            average: 0,
+            min: 0,
+            max: 0,
+            count: 0,
+            suggestion: null,
+            message: 'Not enough similar properties to compare pricing.',
           });
-          router.push('/dashboard/landlord');
+          return;
         }
+
+        const prices = data.map((p) => p.price);
+        const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+
+        // Determine if price is low, good, or high
+        let suggestion: 'low' | 'good' | 'high' | null = null;
+        let message = '';
+
+        if (price < min * 0.9) {
+          suggestion = 'low';
+          message = `Your price is below market average (E${avg.toLocaleString()}). You might get interest quickly but could be leaving money on the table.`;
+        } else if (price > max * 1.1) {
+          suggestion = 'high';
+          message = `Your price is above market average (E${avg.toLocaleString()}). This might take longer to rent. Consider E${min.toLocaleString()}-E${max.toLocaleString()}`;
+        } else {
+          suggestion = 'good';
+          message = `Your price is within market range (E${min.toLocaleString()} - E${max.toLocaleString()}). Good job!`;
+        }
+
+        setPriceInsight({
+          average: avg,
+          min,
+          max,
+          count: data.length,
+          suggestion,
+          message,
+        });
       } catch (error) {
-        console.error('Error checking verification:', error);
-        router.push('/dashboard/landlord');
+        console.error('Error checking price:', error);
       } finally {
-        setCheckingVerification(false);
+        setCheckingPrice(false);
       }
     }
 
-    checkVerification();
-  }, [user, userType, router]);
+    const timer = setTimeout(checkPrice, 800); // Debounce
+    return () => clearTimeout(timer);
+  }, [
+    formData.price,
+    formData.city,
+    formData.property_type,
+    formData.bedrooms,
+  ]);
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -167,7 +226,6 @@ export default function AddPropertyPage() {
       return;
     }
 
-    // Validate file types and size
     const validFiles = files.filter((file) => {
       const isValidType = file.type.startsWith('image/');
       const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
@@ -179,7 +237,6 @@ export default function AddPropertyPage() {
 
     setPhotos([...photos, ...validFiles]);
 
-    // Create preview URLs
     validFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -194,25 +251,23 @@ export default function AddPropertyPage() {
     setPhotoPreviews(photoPreviews.filter((_, i) => i !== index));
   };
 
+  const applySuggestedPrice = () => {
+    if (priceInsight && priceInsight.count > 0) {
+      // Suggest a price in the middle of the range
+      const suggestedPrice = Math.round(
+        (priceInsight.min + priceInsight.max) / 2,
+      );
+      setFormData({ ...formData, price: suggestedPrice.toString() });
+      toast.success('Suggested price applied');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      // Double-check verification before submission
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_verified')
-        .eq('id', user?.id)
-        .single();
-
-      if (profileError) throw profileError;
-
-      if (!profile?.is_verified) {
-        throw new Error('Your account must be verified to list properties');
-      }
-
       // 1. Upload photos
       const photoUrls: string[] = [];
 
@@ -233,7 +288,7 @@ export default function AddPropertyPage() {
         photoUrls.push(publicUrl);
       }
 
-      // 2. Create property
+      // 2. Create property - status is immediately 'active' (no admin approval)
       const { data: property, error: propertyError } = await supabase
         .from('properties')
         .insert([
@@ -245,13 +300,17 @@ export default function AddPropertyPage() {
             price: parseFloat(formData.price),
             location_city: formData.city,
             location_suburb: formData.suburb,
-            location_address: formData.address,
+            location_address: formData.address || null,
             bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
             bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
             is_furnished: formData.is_furnished,
             amenities: formData.amenities,
-            lease_terms: formData.lease_terms,
-            status: 'pending', // Needs admin approval
+            lease_terms: formData.lease_terms || null,
+            contact_whatsapp: formData.contact_whatsapp || null,
+            contact_phone: formData.contact_phone,
+            status: 'active', // Immediately active, no admin approval
+            views: 0,
+            is_featured: false,
           },
         ])
         .select()
@@ -264,7 +323,8 @@ export default function AddPropertyPage() {
         const photoRecords = photoUrls.map((url, index) => ({
           property_id: property.id,
           photo_url: url,
-          display_order: index,
+          display_order: index, // Use display_order instead of is_primary
+          caption: null,
         }));
 
         const { error: photosError } = await supabase
@@ -274,8 +334,8 @@ export default function AddPropertyPage() {
         if (photosError) throw photosError;
       }
 
-      // Redirect to dashboard with success message
-      router.push('/dashboard/landlord?success=Property submitted for review');
+      toast.success('Property listed successfully!');
+      router.push('/dashboard/landlord');
     } catch (error: unknown) {
       console.error('Submission error:', error);
       if (error instanceof Error) {
@@ -287,42 +347,6 @@ export default function AddPropertyPage() {
       setLoading(false);
     }
   };
-
-  // Show loading state while checking verification
-  if (checkingVerification) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <div className="flex justify-center items-center min-h-100">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </div>
-    );
-  }
-
-  // If not verified, show message (though they should have been redirected)
-  if (verificationStatus !== 'verified') {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <div className="bg-yellow-100 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Clock className="h-8 w-8 text-yellow-600" />
-              </div>
-              <h2 className="text-2xl font-bold mb-2">Verification Required</h2>
-              <p className="text-gray-600 mb-6">
-                Your landlord account must be verified before you can list
-                properties. This usually takes 24-48 hours.
-              </p>
-              <Button asChild>
-                <Link href="/dashboard/landlord">Back to Dashboard</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   const renderStep = () => {
     switch (currentStep) {
@@ -350,7 +374,10 @@ export default function AddPropertyPage() {
                 <Select
                   value={formData.property_type}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, property_type: value })
+                    setFormData({
+                      ...formData,
+                      property_type: value as PropertyType,
+                    })
                   }
                 >
                   <SelectTrigger>
@@ -383,6 +410,76 @@ export default function AddPropertyPage() {
                   required
                 />
               </div>
+
+              {/* Price Insight Display */}
+              {checkingPrice && (
+                <div className="mt-2 flex items-center text-sm text-gray-500">
+                  <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                  Analyzing market prices...
+                </div>
+              )}
+
+              {priceInsight && !checkingPrice && priceInsight.count > 0 && (
+                <div
+                  className={`mt-3 p-3 rounded-lg border ${
+                    priceInsight.suggestion === 'good'
+                      ? 'bg-green-50 border-green-200'
+                      : priceInsight.suggestion === 'high'
+                        ? 'bg-yellow-50 border-yellow-200'
+                        : priceInsight.suggestion === 'low'
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    {priceInsight.suggestion === 'good' && (
+                      <Minus className="h-5 w-5 text-green-600 mt-0.5" />
+                    )}
+                    {priceInsight.suggestion === 'high' && (
+                      <TrendingUp className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    )}
+                    {priceInsight.suggestion === 'low' && (
+                      <TrendingDown className="h-5 w-5 text-blue-600 mt-0.5" />
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">
+                        Based on {priceInsight.count} similar properties in{' '}
+                        {formData.city}
+                      </p>
+                      <p className="text-sm mt-1">{priceInsight.message}</p>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-600">
+                        <span>
+                          Range: E{priceInsight.min.toLocaleString()} - E
+                          {priceInsight.max.toLocaleString()}
+                        </span>
+                        <span>
+                          Avg: E
+                          {Math.round(priceInsight.average).toLocaleString()}
+                        </span>
+                      </div>
+
+                      {priceInsight.suggestion !== 'good' && (
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="mt-2 h-auto p-0 text-primary"
+                          onClick={applySuggestedPrice}
+                        >
+                          Apply suggested price
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {priceInsight && priceInsight.count === 0 && (
+                <p className="mt-2 text-sm text-gray-500">
+                  No similar properties found in {formData.city} to compare
+                  pricing.
+                </p>
+              )}
 
               <div>
                 <Label htmlFor="description">Description</Label>
@@ -557,7 +654,7 @@ export default function AddPropertyPage() {
       case 4:
         return (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold">Photos & Review</h2>
+            <h2 className="text-xl font-semibold">Photos & Contact</h2>
 
             {/* Photo Upload */}
             <div>
@@ -566,14 +663,12 @@ export default function AddPropertyPage() {
                 <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mb-4">
                   {photoPreviews.map((preview, index) => (
                     <div key={index} className="relative aspect-square">
-                      <div className="relative w-full h-full">
-                        <Image
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          fill
-                          className="object-cover rounded-lg"
-                        />
-                      </div>
+                      <Image
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        fill
+                        className="object-cover rounded-lg"
+                      />
                       <Button
                         type="button"
                         variant="destructive"
@@ -583,6 +678,11 @@ export default function AddPropertyPage() {
                       >
                         <X className="h-3 w-3" />
                       </Button>
+                      {index === 0 && (
+                        <Badge className="absolute bottom-2 left-2 bg-primary">
+                          Cover
+                        </Badge>
+                      )}
                     </div>
                   ))}
 
@@ -607,6 +707,39 @@ export default function AddPropertyPage() {
               </div>
             </div>
 
+            {/* Contact Information */}
+            <div className="space-y-4">
+              <h3 className="font-medium">Contact Information</h3>
+
+              <div>
+                <Label htmlFor="contact_phone">Phone Number</Label>
+                <Input
+                  id="contact_phone"
+                  placeholder="+268 7600 0000"
+                  value={formData.contact_phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contact_phone: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="contact_whatsapp">WhatsApp (Optional)</Label>
+                <Input
+                  id="contact_whatsapp"
+                  placeholder="+268 7600 0000"
+                  value={formData.contact_whatsapp}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      contact_whatsapp: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+
             {/* Preview Summary */}
             <Card>
               <CardContent className="p-6">
@@ -618,7 +751,15 @@ export default function AddPropertyPage() {
                   </div>
                   <div className="flex">
                     <dt className="w-24 text-sm text-gray-500">Price:</dt>
-                    <dd className="text-sm">E{formData.price}/month</dd>
+                    <dd className="text-sm font-semibold">
+                      E{parseFloat(formData.price || '0').toLocaleString()}
+                      /month
+                      {priceInsight?.suggestion === 'good' && (
+                        <span className="ml-2 text-xs text-green-600">
+                          ✓ Good price
+                        </span>
+                      )}
+                    </dd>
                   </div>
                   <div className="flex">
                     <dt className="w-24 text-sm text-gray-500">Location:</dt>
@@ -630,6 +771,12 @@ export default function AddPropertyPage() {
                     <dt className="w-24 text-sm text-gray-500">Type:</dt>
                     <dd className="text-sm capitalize">
                       {formData.property_type}
+                    </dd>
+                  </div>
+                  <div className="flex">
+                    <dt className="w-24 text-sm text-gray-500">Bed/Bath:</dt>
+                    <dd className="text-sm">
+                      {formData.bedrooms} bed • {formData.bathrooms} bath
                     </dd>
                   </div>
                   <div className="flex">
@@ -646,10 +793,10 @@ export default function AddPropertyPage() {
               </CardContent>
             </Card>
 
-            <Alert>
-              <AlertDescription>
-                Your listing will be reviewed by our admin team before going
-                live. This usually takes 24-48 hours.
+            <Alert className="bg-green-50 border-green-200">
+              <AlertDescription className="text-green-800">
+                ✓ Your property will be listed immediately after submission - no
+                admin approval needed!
               </AlertDescription>
             </Alert>
           </div>
@@ -744,10 +891,10 @@ export default function AddPropertyPage() {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
+                  Listing Property...
                 </>
               ) : (
-                'Submit for Review'
+                'List Property Now'
               )}
             </Button>
           )}

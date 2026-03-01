@@ -65,4 +65,21 @@ export interface Property {
     photos: string[];
     nearby: NearbyPlace[];
     similarProperties: SimilarProperty[];
+    inquiries?: Inquiry[];
+}
+export interface PropertyPhoto {
+    id: string;
+    photo_url: string;
+    is_primary: boolean;
+}
+
+export interface Inquiry {
+    id: string;
+    property_id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    message: string;
+    status: 'new' | 'read' | 'replied';
+    created_at: string;
 }

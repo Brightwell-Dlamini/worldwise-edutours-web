@@ -23,6 +23,8 @@ export interface Property {
     views: number
     created_at: string
     updated_at: string
+    contact_phone: string  // Add this
+    contact_whatsapp?: string  // Add this
     // Joined fields
     landlord?: {
         full_name: string
