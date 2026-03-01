@@ -1,6 +1,6 @@
 // mock/properties.ts
 
-import { Property, PropertyPhoto } from '@/types/property';
+import { Property, PropertyPhoto, PropertyType } from '@/types/property';
 
 // Define types for related data
 interface MockLandlord {
@@ -10,7 +10,7 @@ interface MockLandlord {
 }
 
 // Extended type for properties with relations
-interface PropertyWithRelations extends Property {
+export interface PropertyWithRelations extends Property {
     landlord: MockLandlord;
     photos: PropertyPhoto[];
 }
@@ -20,16 +20,16 @@ export const MOCK_PROPERTIES: Property[] = [
         id: '1',
         landlord_id: 'landlord_1',
         title: 'Spacious 3-Bedroom House with Garden',
-        description: 'Beautiful family home with large garden, modern kitchen, and close to schools and shops. Features include solar panels, backup water, and 24hr security.',
+        description: 'Beautiful family home with large garden, modern kitchen, and close to schools and shops in Mbabane. Features include solar panels, backup water, and 24hr security.',
         price: 2500,
         bedrooms: 3,
         bathrooms: 2,
         property_type: 'house',
-        location_city: 'Cape Town',
-        location_suburb: 'Southern Suburbs',
-        location_address: '15 Oak Avenue',
-        latitude: -33.9249,
-        longitude: 18.4241,
+        location_city: 'Mbabane',
+        location_suburb: 'Ezulwini Valley',
+        location_address: '15 Mountain Drive',
+        latitude: -26.3167,
+        longitude: 31.1333,
         is_furnished: false,
         amenities: ['Parking', 'Backup Water', 'Security', 'Garden', 'Built-in Wardrobes', 'Pet Friendly', 'Electric Fence', '24hr Security'],
         status: 'active',
@@ -41,17 +41,17 @@ export const MOCK_PROPERTIES: Property[] = [
     {
         id: '2',
         landlord_id: 'landlord_2',
-        title: 'Modern 2-Bedroom Apartment with City Views',
-        description: 'Stunning apartment on the 15th floor with panoramic city views. Fully furnished with high-end finishes, secure parking, and access to rooftop pool.',
+        title: 'Modern 2-Bedroom Apartment with Mountain Views',
+        description: 'Stunning apartment with panoramic mountain views in Mbabane Central. Fully furnished with high-end finishes, secure parking, and access to rooftop terrace.',
         price: 3500,
         bedrooms: 2,
         bathrooms: 2,
         property_type: 'apartment',
-        location_city: 'Cape Town',
-        location_suburb: 'City Bowl',
-        location_address: '45 Century Boulevard',
-        latitude: -33.9189,
-        longitude: 18.4233,
+        location_city: 'Mbabane',
+        location_suburb: 'Central',
+        location_address: '45 Gwamile Street',
+        latitude: -26.3208,
+        longitude: 31.1417,
         is_furnished: true,
         amenities: ['Parking', 'Security', 'Furnished', 'Built-in Wardrobes', '24hr Security'],
         status: 'active',
@@ -64,16 +64,16 @@ export const MOCK_PROPERTIES: Property[] = [
         id: '3',
         landlord_id: 'landlord_3',
         title: 'Cozy 1-Bedroom Backrooms in Quiet Neighborhood',
-        description: 'Private and secure backrooms with separate entrance. Perfect for single professional or student. Includes parking and prepaid electricity.',
+        description: 'Private and secure backrooms with separate entrance in Manzini. Perfect for single professional or student. Includes parking and prepaid electricity.',
         price: 1200,
         bedrooms: 1,
         bathrooms: 1,
         property_type: 'backrooms',
-        location_city: 'Cape Town',
-        location_suburb: 'Northern Suburbs',
-        location_address: '22 Pine Street',
-        latitude: -33.8671,
-        longitude: 18.5111,
+        location_city: 'Manzini',
+        location_suburb: 'Fairview',
+        location_address: '22 Ngwane Street',
+        latitude: -26.4988,
+        longitude: 31.3800,
         is_furnished: false,
         amenities: ['Parking', 'Pet Friendly', 'Electric Fence'],
         status: 'active',
@@ -86,16 +86,16 @@ export const MOCK_PROPERTIES: Property[] = [
         id: '4',
         landlord_id: 'landlord_1',
         title: 'Luxury 4-Bedroom Townhouse in Secure Estate',
-        description: 'Elegant townhouse in sought-after security estate. Open plan living, modern kitchen, private garden, and double garage.',
+        description: 'Elegant townhouse in sought-after security estate in Ezulwini. Open plan living, modern kitchen, private garden, and double garage.',
         price: 4500,
         bedrooms: 4,
         bathrooms: 3,
         property_type: 'townhouse',
-        location_city: 'Cape Town',
-        location_suburb: 'Atlantic Seaboard',
-        location_address: '8 Seaside Close',
-        latitude: -33.9089,
-        longitude: 18.4177,
+        location_city: 'Ezulwini',
+        location_suburb: 'The Valley',
+        location_address: '8 Mantenga Drive',
+        latitude: -26.4167,
+        longitude: 31.1667,
         is_furnished: true,
         amenities: ['Parking', 'Backup Water', 'Security', 'Garden', 'Furnished', 'Built-in Wardrobes', 'Electric Fence', '24hr Security'],
         status: 'active',
@@ -108,16 +108,16 @@ export const MOCK_PROPERTIES: Property[] = [
         id: '5',
         landlord_id: 'landlord_2',
         title: 'Student-Friendly 2-Bedroom Apartment near University',
-        description: 'Conveniently located near major universities. Modern finishes, secure building with laundry facilities and study areas.',
+        description: 'Conveniently located near University of Eswatini in Kwaluseni. Modern finishes, secure building with laundry facilities and study areas.',
         price: 1800,
         bedrooms: 2,
         bathrooms: 1,
         property_type: 'apartment',
-        location_city: 'Cape Town',
-        location_suburb: 'Observatory',
-        location_address: '56 Main Road',
-        latitude: -33.9378,
-        longitude: 18.4764,
+        location_city: 'Manzini',
+        location_suburb: 'Kwaluseni',
+        location_address: '56 University Road',
+        latitude: -26.4833,
+        longitude: 31.3333,
         is_furnished: true,
         amenities: ['Security', 'Furnished', 'Built-in Wardrobes', '24hr Security'],
         status: 'active',
@@ -130,16 +130,16 @@ export const MOCK_PROPERTIES: Property[] = [
         id: '6',
         landlord_id: 'landlord_3',
         title: 'Spacious 3-Bedroom House with Pool',
-        description: 'Beautiful family home with swimming pool, large garden, and entertainment area. Solar powered with battery backup.',
+        description: 'Beautiful family home with swimming pool, large garden, and entertainment area in Matsapha. Solar powered with battery backup.',
         price: 3800,
         bedrooms: 3,
         bathrooms: 2,
         property_type: 'house',
-        location_city: 'Cape Town',
-        location_suburb: 'Constantia',
-        location_address: '12 Vineyard Road',
-        latitude: -34.0215,
-        longitude: 18.4188,
+        location_city: 'Manzini',
+        location_suburb: 'Matsapha',
+        location_address: '12 Industrial Road',
+        latitude: -26.5242,
+        longitude: 31.3072,
         is_furnished: false,
         amenities: ['Parking', 'Backup Water', 'Security', 'Garden', 'Built-in Wardrobes', 'Pet Friendly', 'Electric Fence'],
         status: 'active',
@@ -147,6 +147,94 @@ export const MOCK_PROPERTIES: Property[] = [
         views: 178,
         created_at: '2024-03-10T13:20:00Z',
         updated_at: '2024-03-10T13:20:00Z'
+    },
+    {
+        id: '7',
+        landlord_id: 'landlord_1',
+        title: 'Executive 3-Bedroom House in Lobamba',
+        description: 'Stately home near Parliament buildings, featuring traditional Swazi architecture with modern amenities. Large garden with indigenous plants.',
+        price: 4200,
+        bedrooms: 3,
+        bathrooms: 2.5,
+        property_type: 'house',
+        location_city: 'Lobamba',
+        location_suburb: 'Royal Valley',
+        location_address: '3 Parliament Road',
+        latitude: -26.4667,
+        longitude: 31.2000,
+        is_furnished: false,
+        amenities: ['Parking', 'Backup Water', 'Security', 'Garden', 'Built-in Wardrobes', 'Electric Fence', 'Staff Quarters'],
+        status: 'active',
+        is_featured: true,
+        views: 92,
+        created_at: '2024-03-09T10:00:00Z',
+        updated_at: '2024-03-09T10:00:00Z'
+    },
+    {
+        id: '8',
+        landlord_id: 'landlord_2',
+        title: 'Modern 2-Bedroom Apartment in Nhlangano',
+        description: 'Contemporary apartment in Eswatini\'s southern hub. Close to shops, schools, and public transport. Ideal for young professionals.',
+        price: 1600,
+        bedrooms: 2,
+        bathrooms: 1,
+        property_type: 'apartment',
+        location_city: 'Nhlangano',
+        location_suburb: 'Town Centre',
+        location_address: '28 Mahlehluka Street',
+        latitude: -27.1167,
+        longitude: 31.2000,
+        is_furnished: false,
+        amenities: ['Parking', 'Security', 'Built-in Wardrobes'],
+        status: 'active',
+        is_featured: false,
+        views: 45,
+        created_at: '2024-03-08T15:45:00Z',
+        updated_at: '2024-03-08T15:45:00Z'
+    },
+    {
+        id: '9',
+        landlord_id: 'landlord_3',
+        title: 'Riverside Cottage in Piggs Peak',
+        description: 'Charming cottage overlooking the Komati River. Perfect for nature lovers, with hiking trails and stunning mountain views.',
+        price: 2200,
+        bedrooms: 2,
+        bathrooms: 1,
+        property_type: 'house',
+        location_city: 'Piggs Peak',
+        location_suburb: 'Forestry Area',
+        location_address: '7 River Bend',
+        latitude: -25.9667,
+        longitude: 31.2500,
+        is_furnished: true,
+        amenities: ['Parking', 'Garden', 'Furnished', 'Pet Friendly', 'Fireplace'],
+        status: 'active',
+        is_featured: false,
+        views: 78,
+        created_at: '2024-03-07T11:20:00Z',
+        updated_at: '2024-03-07T11:20:00Z'
+    },
+    {
+        id: '10',
+        landlord_id: 'landlord_1',
+        title: 'Commercial & Residential Property in Siteki',
+        description: 'Unique property with ground floor retail space and upstairs 2-bedroom apartment. Ideal for investor wanting live-work setup.',
+        price: 2800,
+        bedrooms: 2,
+        bathrooms: 1.5,
+        property_type: 'townhouse',
+        location_city: 'Siteki',
+        location_suburb: 'Commercial Area',
+        location_address: '45 Main Street',
+        latitude: -26.4500,
+        longitude: 31.9500,
+        is_furnished: false,
+        amenities: ['Parking', 'Security', 'Commercial Space', 'Separate Entrance'],
+        status: 'active',
+        is_featured: false,
+        views: 34,
+        created_at: '2024-03-06T09:30:00Z',
+        updated_at: '2024-03-06T09:30:00Z'
     }
 ];
 
@@ -173,7 +261,7 @@ export const MOCK_PHOTOS: Record<string, PropertyPhoto[]> = {
             id: 'photo_1_3',
             property_id: '1',
             photo_url: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800',
-            caption: 'Garden',
+            caption: 'Garden with Mountain View',
             display_order: 3,
             created_at: '2024-03-15T10:30:00Z'
         }
@@ -251,24 +339,80 @@ export const MOCK_PHOTOS: Record<string, PropertyPhoto[]> = {
             display_order: 2,
             created_at: '2024-03-10T13:20:00Z'
         }
+    ],
+    '7': [
+        {
+            id: 'photo_7_1',
+            property_id: '7',
+            photo_url: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800',
+            caption: 'Exterior',
+            display_order: 1,
+            created_at: '2024-03-09T10:00:00Z'
+        },
+        {
+            id: 'photo_7_2',
+            property_id: '7',
+            photo_url: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800',
+            caption: 'Garden',
+            display_order: 2,
+            created_at: '2024-03-09T10:00:00Z'
+        }
+    ],
+    '8': [
+        {
+            id: 'photo_8_1',
+            property_id: '8',
+            photo_url: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
+            caption: 'Living Area',
+            display_order: 1,
+            created_at: '2024-03-08T15:45:00Z'
+        }
+    ],
+    '9': [
+        {
+            id: 'photo_9_1',
+            property_id: '9',
+            photo_url: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=800',
+            caption: 'Cottage Exterior',
+            display_order: 1,
+            created_at: '2024-03-07T11:20:00Z'
+        },
+        {
+            id: 'photo_9_2',
+            property_id: '9',
+            photo_url: 'https://images.unsplash.com/photo-1563299796-17596ed6b017?w=800',
+            caption: 'River View',
+            display_order: 2,
+            created_at: '2024-03-07T11:20:00Z'
+        }
+    ],
+    '10': [
+        {
+            id: 'photo_10_1',
+            property_id: '10',
+            photo_url: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800',
+            caption: 'Building Exterior',
+            display_order: 1,
+            created_at: '2024-03-06T09:30:00Z'
+        }
     ]
 };
 
 // Mock landlord profiles
 export const MOCK_LANDLORDS: Record<string, MockLandlord> = {
     'landlord_1': {
-        full_name: 'John Smith',
-        phone: '+27 82 123 4567',
+        full_name: 'James Dlamini',
+        phone: '+268 7600 1234',
         is_verified: true
     },
     'landlord_2': {
-        full_name: 'Sarah Johnson',
-        phone: '+27 83 987 6543',
+        full_name: 'Nomsa Mamba',
+        phone: '+268 7611 9876',
         is_verified: true
     },
     'landlord_3': {
-        full_name: 'Michael Brown',
-        phone: '+27 84 456 7890',
+        full_name: 'Thabo Nkosi',
+        phone: '+268 7622 4567',
         is_verified: false
     }
 };
@@ -282,21 +426,49 @@ export const getMockPropertiesWithRelations = (): PropertyWithRelations[] => {
             phone: '',
             is_verified: false
         },
-        photos: MOCK_PHOTOS[property.id] || []
+        photos: MOCK_PHOTOS[property.id] || [],
+        // Ensure coordinates exist
+        latitude: property.latitude ?? 0,
+        longitude: property.longitude ?? 0,
     }));
 };
 
 // Define filter type
-interface PropertyFilters {
+export interface PropertyFilters {
     city?: string;
     keyword?: string;
     minPrice?: number;
     maxPrice?: number;
     bedrooms?: string;
-    propertyType?: string[];
+    propertyType?: PropertyType[];
     amenities?: string[];
     furnished?: boolean;
 }
+
+// Eswatini cities for filter options
+export const ESWATINI_CITIES = [
+    'Mbabane',
+    'Manzini',
+    'Ezulwini',
+    'Lobamba',
+    'Nhlangano',
+    'Piggs Peak',
+    'Siteki',
+    'Big Bend',
+    'Mhlume',
+    'Simunye',
+    'Matsapha',
+    'Hlatikulu'
+];
+
+// Eswatini-specific amenities
+export const ESWATINI_AMENITIES = [
+    'Parking',
+    'Furnished',
+    'Pet Friendly',
+    'Electric Gate',
+    '24hr Security',
+];
 
 // Helper function to filter properties based on criteria
 export const filterMockProperties = (
@@ -319,7 +491,7 @@ export const filterMockProperties = (
             }
         }
 
-        // Price range
+        // Price range (in Emalangeni - E)
         if (filters.minPrice && property.price < filters.minPrice) {
             return false;
         }
@@ -329,14 +501,15 @@ export const filterMockProperties = (
 
         // Bedrooms - handle 'any' case
         if (filters.bedrooms && filters.bedrooms !== 'any') {
-            if (!property.bedrooms || property.bedrooms < parseInt(filters.bedrooms)) {
+            const minBedrooms = parseInt(filters.bedrooms);
+            if (!property.bedrooms || property.bedrooms < minBedrooms) {
                 return false;
             }
         }
 
         // Property type
         if (filters.propertyType && filters.propertyType.length > 0) {
-            if (!property.property_type || !filters.propertyType.includes(property.property_type)) {
+            if (!property.property_type || !filters.propertyType.includes(property.property_type as PropertyType)) {
                 return false;
             }
         }
@@ -360,3 +533,42 @@ export const filterMockProperties = (
         return true;
     });
 };
+
+// Filter presets for Eswatini market
+export const FILTER_PRESETS = [
+    { name: 'Under E2000', filters: { maxPrice: 2000 } },
+    { name: '2+ Bedrooms', filters: { bedrooms: '2' } },
+    { name: 'Furnished', filters: { furnished: true } },
+    { name: 'With Parking', filters: { amenities: ['Parking'] } },
+    // { name: 'Solar Power', filters: { amenities: ['Solar Power'] } },
+    // { name: 'Staff Quarters', filters: { amenities: ['Staff Quarters'] } },
+];
+
+export const PROPERTY_TYPES: PropertyType[] = [
+    'house',
+    'apartment',
+    'townhouse',
+    'backrooms',
+] as const;
+
+export type SortOption = 'newest' | 'price_asc' | 'price_desc';
+export type PaginationMode = 'pagination' | 'load-more';
+
+export interface Filters {
+    city: string;
+    keyword: string;
+    minPrice: number;
+    maxPrice: number;
+    bedrooms: string;
+    propertyType: PropertyType[];
+    amenities: string[];
+    furnished: boolean;
+}
+
+export interface SavedSearch {
+    name: string;
+    filters: Filters;
+    createdAt: number;
+}
+
+export const ALL_PROPERTIES = getMockPropertiesWithRelations();

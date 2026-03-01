@@ -2,7 +2,22 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['https://pqnrogilspjhoaafezan.supabase.co', 'images.unsplash.com',], // Add your Supabase project domain
+
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'https://pqnrogilspjhoaafezan.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+
   },
 
 };
